@@ -15,6 +15,29 @@ This repository is an active learning project, not a finished secure product.
 Athena can be useful today, but a small local model can still misunderstand a
 request or produce a wrong answer. Important outputs should be verified.
 
+## Why Athena?
+
+Most AI assistants are designed around cloud chat. Athena is for work that
+begins on your own computer.
+
+- **Work with private local files** using local model inference rather than
+  sending the document to a hosted AI service.
+- **Trace answers back to evidence** instead of accepting unsupported
+  summaries.
+- **Read difficult documents**, including PDFs, Office files, scans and images
+  through OCR.
+- **Combine local documents with current public research** while keeping local
+  and public evidence distinguishable.
+- **See how a request is handled** through Athena's visible routing and
+  capability pipeline.
+- **Choose the quality-speed trade-off** with Fast, Balanced and Max modes.
+- **Keep conversations and model inference local** while retaining optional
+  web research when current information is required.
+- **Inspect and modify everything** because the project is fully open source.
+
+Athena is particularly useful for students, developers, researchers and anyone
+working with documents they would prefer not to upload to a cloud chatbot.
+
 ## What works
 
 - Persistent local conversations with bounded history and older-message summaries
