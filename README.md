@@ -20,7 +20,7 @@ request or produce a wrong answer. Important outputs should be verified.
 Most AI assistants are designed around cloud chat. Athena is for work that
 begins on your own computer.
 
-- **Work with private local files** using local model inference rather than
+- **Work with private local files** using local model inference and keeping everything private rather than
   sending the document to a hosted AI service.
 - **Trace answers back to evidence** instead of accepting unsupported
   summaries.
@@ -30,7 +30,6 @@ begins on your own computer.
   and public evidence distinguishable.
 - **See how a request is handled** through Athena's visible routing and
   capability pipeline.
-- **Choose the quality-speed trade-off** with Fast, Balanced and Max modes.
 - **Keep conversations and model inference local** while retaining optional
   web research when current information is required.
 - **Inspect and modify everything** because the project is fully open source.
