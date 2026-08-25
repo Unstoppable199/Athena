@@ -1,0 +1,214 @@
+/* ==================================================================
+   ATHENA PROCESSING RAIL
+
+   This file intentionally styles only the left pipeline. The rest of
+   Athena's established layout lives in index.html and is not affected.
+   ================================================================== */
+
+/* The rail has no card or panel around it. It should feel like a quiet
+   instrument beside the conversation, not another area competing for focus. */
+#flow-rail {
+  user-select: none;
+  outline: none;
+}
+
+#flow-rail:not(.working) {
+  cursor: pointer;
+}
+
+#flow-rail:focus-visible {
+  filter: drop-shadow(0 0 7px rgba(124, 140, 255, 0.28));
+}
+
+#flow-svg {
+  transition: opacity 180ms ease, transform 240ms ease;
+}
+
+/* The two versions occupy the same SVG. JavaScript changes the viewBox so
+   the short idle trace remains comfortably sized instead of being squeezed
+   into the height of the detailed graph. */
+#flow-svg .idle-layer,
+#flow-svg .trace-layer {
+  transition: opacity 220ms ease, transform 260ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+#flow-svg .idle-layer {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.97);
+}
+
+#flow-svg .trace-layer {
+  opacity: 1;
+}
+
+#flow-rail.idle .idle-layer {
+  opacity: 0.76;
+  transform: scale(1);
+}
+
+#flow-rail.idle .trace-layer {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(5px) scale(0.985);
+}
+
+#flow-rail.working .idle-layer,
+#flow-rail.complete .idle-layer,
+#flow-rail.pinned .idle-layer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#flow-rail.working .trace-layer,
+#flow-rail.complete .trace-layer,
+#flow-rail.pinned .trace-layer {
+  opacity: 1;
+  transform: none;
+}
+
+/* A small hover lift is enough to communicate that the finished route can
+   be opened or collapsed. It never runs while Athena is processing. */
+#flow-rail.idle:hover #flow-svg,
+#flow-rail.complete:hover #flow-svg,
+#flow-rail.pinned:hover #flow-svg {
+  transform: translateY(-2px);
+}
+
+/* ---- idle trace ---- */
+
+#flow-svg .idle-pipe {
+  stroke: rgba(124, 140, 255, 0.25);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 5;
+}
+
+#flow-svg .idle-node rect {
+  fill: rgba(17, 21, 31, 0.55);
+  stroke: rgba(124, 140, 255, 0.26);
+  stroke-width: 1;
+}
+
+#flow-svg .idle-node.endpoint rect {
+  fill: transparent;
+  stroke-dasharray: 3 4;
+}
+
+#flow-svg .idle-node text {
+  fill: rgba(199, 204, 219, 0.68);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-anchor: middle;
+  letter-spacing: 0.04em;
+}
+
+/* ---- detailed trace ---- */
+
+/* Unused routes stay visible enough to explain the graph but recede behind
+   the path Athena actually takes. */
+#flow-svg .trace-layer .pipe {
+  stroke: rgba(89, 98, 126, 0.34);
+  stroke-width: 1.6;
+}
+
+#flow-svg .trace-layer .pipe.loop {
+  stroke-width: 1.25;
+  stroke-dasharray: 3 4;
+}
+
+/* The direct-chat bypass is secondary to the evidence-checked route. */
+#flow-svg .trace-layer .pipe.direct {
+  stroke-width: 1.25;
+}
+
+#flow-svg .trace-layer .pipe.done {
+  stroke: rgba(124, 140, 255, 0.58);
+}
+
+/* Only the currently travelled segment moves. Completed and unused paths
+   remain still so the animation says something rather than adding noise. */
+#flow-svg .trace-layer .pipe.flowing {
+  stroke: #8b9aff;
+  stroke-width: 2.25;
+  stroke-dasharray: 7 9;
+  filter: drop-shadow(0 0 3px rgba(124, 140, 255, 0.58));
+}
+
+#flow-svg .trace-layer .fnode rect {
+  fill: rgba(15, 19, 28, 0.74);
+  stroke: rgba(89, 98, 126, 0.48);
+}
+
+#flow-svg .trace-layer .fnode text {
+  fill: rgba(171, 179, 204, 0.72);
+  font-size: 13px;
+}
+
+#flow-svg .trace-layer .fnode.endpoint rect {
+  fill: transparent;
+}
+
+#flow-svg .trace-layer .fnode.done rect {
+  fill: rgba(124, 140, 255, 0.065);
+  stroke: rgba(124, 140, 255, 0.55);
+}
+
+#flow-svg .trace-layer .fnode.done text {
+  fill: rgba(226, 229, 241, 0.90);
+}
+
+#flow-svg .trace-layer .fnode.active rect {
+  fill: rgba(124, 140, 255, 0.13);
+  stroke: #8b9aff;
+  filter: drop-shadow(0 0 7px rgba(124, 140, 255, 0.54));
+}
+
+#flow-svg .trace-layer .fnode.active text {
+  fill: #f3f4ff;
+}
+
+/* A stopped or failed turn keeps its route visible but does not pretend that
+   it reached Answer. Its final stage is distinct until the rail collapses. */
+#flow-rail.failed .fnode.halted rect,
+#flow-rail.failed .pipe.halted {
+  stroke: rgba(255, 109, 125, 0.78);
+}
+
+#flow-rail.stopped .fnode.halted rect,
+#flow-rail.stopped .pipe.halted {
+  stroke: rgba(190, 197, 218, 0.64);
+}
+
+#flow-rail.failed .fnode.halted text {
+  fill: rgba(255, 190, 198, 0.92);
+}
+
+#flow-rail.stopped .fnode.halted text {
+  fill: rgba(218, 222, 235, 0.86);
+}
+
+#flow-svg .run-tool {
+  fill: rgba(171, 179, 204, 0.78);
+  font-size: 11.5px;
+}
+
+#flow-svg .run-tool.live {
+  fill: #a7b1ff;
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #flow-svg,
+  #flow-svg .idle-layer,
+  #flow-svg .trace-layer {
+    transition: none;
+  }
+
+  #flow-rail.idle:hover #flow-svg,
+  #flow-rail.complete:hover #flow-svg,
+  #flow-rail.pinned:hover #flow-svg {
+    transform: none;
+  }
+}

@@ -1,0 +1,17 @@
+# Runtime dependencies tested with Python 3.14 on Windows.
+beautifulsoup4==4.15.0
+ddgs==9.14.4
+fastapi==0.139.0
+ollama==0.6.2
+openpyxl==3.1.5
+pillow==12.3.0
+pypdf==6.14.2
+pypdfium2==5.12.1
+pytesseract==0.3.13
+python-docx==1.2.0
+python-dotenv==1.2.2
+python-pptx==1.0.2
+requests==2.34.2
+tzdata==2026.3
+uvicorn==0.51.0
+xlrd==2.0.2

@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-regressions:
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Compile Python
+        run: python -m compileall -q core models services main.py
+
+      - name: Check JavaScript syntax
+        run: node --check core/static/athena.js
+
+      - name: Exercise frontend functions
+        run: node tests/check_page_functions.js
+
+      - name: Run deterministic regressions
+        run: python tests/test_regressions.py

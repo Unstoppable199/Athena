@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Athena</title>
+<link rel="icon" href="/static/owl1.png?v=1" type="image/png">
+<style>
+  /* ==================================================================
+     HOW TO CHANGE THE LOOK OF THIS PAGE
+
+     Every size is in plain pixels (px). Bigger number, bigger thing.
+     Change a number, save, refresh the browser - Athena does not need
+     restarting.
+
+     To find something quickly, search this file for  SIZE:
+     Every adjustable number is marked with that, plus a note in plain
+     words saying what it controls.
+
+     Quick map of the things people change most:
+
+       Chat message text ........ SIZE: chat message text
+       How wide answers run ..... SIZE: reading width
+       "you" / "athena" labels .. SIZE: you-athena label
+       Input box width .......... SIZE: input box width
+       Input box height ......... SIZE: input box height  (3 places)
+       Owl in the corner ........ SIZE: header owl
+       The word "Athena" ........ SIZE: header title
+       Token / ready pills ...... SIZE: header chips
+       Sound button ............. SIZE: sound button
+       Starter question buttons . SIZE: starter questions
+       Big welcome heading ...... SIZE: welcome heading
+       Timing + tokens line ..... SIZE: reply stats line
+       Left/right page margins .. SIZE: page side margins
+
+     Colours all live together in the ":root" block just below, so the
+     whole scheme can be changed from one place.
+
+     No fonts are downloaded. Athena runs without the internet, so a
+     page that needed a font server to look right would be broken in
+     exactly the situation it is built for. Everything below uses
+     typefaces already on the machine.
+     ================================================================== */
+
+  :root {
+    /* Tells the browser this is a dark page, so anything it draws
+       itself - dropdown lists, scrollbars, text-selection - uses dark
+       defaults. Without this the mode list opened as white text on a
+       white background, because only the closed control was styled by
+       the CSS below and the open list is drawn by the operating
+       system. */
+    color-scheme: dark;
+
+    /* ---- COLOURS ---- */
+
+    --ink: #0b0d12;            /* page background (darkest) */
+    --panel: #12151c;          /* input box + pill backgrounds */
+    --panel-raised: #171b23;   /* answer panels, slightly lighter */
+    --border: #242a35;         /* all the thin outlines */
+    --text: #e9ebf0;           /* main text colour (near white) */
+    --muted: #8991a3;          /* dimmed text: labels, hints, stats */
+    --accent: #7c8cff;         /* the blue/purple: send button, rails */
+    --accent-soft: rgba(124, 140, 255, 0.14);  /* faint accent wash */
+    --user-bubble: #1c2440;    /* background of YOUR messages */
+    --danger: #d94a4a;         /* errors only */
+
+    /* ---- FONTS ----
+       First name is preferred; the rest are fallbacks. All of these
+       ship with Windows or macOS, so nothing is fetched over the
+       network and nothing changes when offline. */
+
+    --font-display: "Segoe UI Variable Display", "Segoe UI Semibold",
+                    Cambria, Georgia, serif;          /* headings */
+    --font-body: "Segoe UI Variable Text", "Segoe UI",
+                 system-ui, -apple-system, sans-serif; /* normal text */
+    --font-mono: "Cascadia Code", Consolas, ui-monospace,
+                 "SF Mono", monospace;                 /* labels, numbers */
+    --font-wordmark: Georgia, Cambria, "Times New Roman",
+                 serif;             /* just the "Athena" logotype */
+
+    /* ---- SHARED SIZES ---- */
+
+    --radius: 18px;   /* SIZE: how rounded panels and bubbles are */
+
+    /* SIZE: reading width. How far a line of an answer may run before
+       it wraps. Long lines are hard to follow, so this is deliberately
+       narrower than the window. Raise it to use more of a wide screen;
+       3000px effectively turns the limit off. */
+    --read: 1900px;
+  }
+
+  /* Makes width/height include padding and borders. Leave this alone. */
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+
+    /* Two soft glows: one at the top behind the header, one low and
+       off to the side so the page is not perfectly flat. Lower the
+       last number in each to make it fainter, or delete a line. */
+    background:
+      radial-gradient(ellipse 1600px 780px at 50% -10%, rgba(124, 140, 255, 0.10), transparent 70%),
+      radial-gradient(ellipse 1200px 700px at 88% 108%, rgba(124, 140, 255, 0.05), transparent 70%),
+      var(--ink);
+    background-attachment: fixed;
+
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 30px;    /* SIZE: default text size for the whole page */
+    line-height: 1.55;
+
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* =============================== HEADER ===============================
+     The bar across the top: owl, "Athena", the pills, sound button. */
+
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(11, 13, 18, 0.78);
+    backdrop-filter: blur(14px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .app-header {
+    max-width: 3000px;
+    margin: 0 auto;
+    padding: 14px 48px;    /* SIZE: header height (first) and its
+                              left/right margins (second) */
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .logo {
+    /* SIZE: header owl. Change both together to keep it round. */
+    width: 62px;
+    height: 62px;
+    object-fit: cover;
+    border-radius: 50%;
+    /* A faint ring so the owl reads as a badge rather than a cut-out. */
+    box-shadow: 0 0 0 1px var(--border), 0 0 24px rgba(124, 140, 255, 0.18);
+    flex-shrink: 0;
+  }
+
+  .app-header h1 {
+    font-family: var(--font-wordmark);
+    font-size: 52px;        /* SIZE: header title - the word "Athena" */
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0;
+    line-height: 1;
+    /* A subtle accent-tinted gradient instead of flat white, so the
+       one place the name appears reads as a logotype, not a label. */
+    background: linear-gradient(135deg, var(--text) 40%, var(--accent) 130%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .spacer { flex: 1; }
+
+  /* The "0 tokens" pill in the top right. */
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 21px;        /* SIZE: header chips - text in the pills */
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 18px;      /* SIZE: how chunky the pills are */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;   /* stops the count jittering */
+  }
+
+  /* Also used by the running capability in the pipeline diagram. */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .icon-btn {
+    width: 46px;      /* SIZE: sound button. Change both together. */
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 22px;  /* SIZE: the note symbol inside the sound button */
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: color .15s ease, border-color .15s ease;
+  }
+
+  .icon-btn:hover { color: var(--text); border-color: var(--accent); }
+  .icon-btn.off { opacity: 0.45; }   /* faded look when sound is muted */
+
+  /* A header button with a word on it, for the two actions worth
+     naming: New chat and History. Pill-shaped rather than round, so
+     they read as a pair and not as more single-glyph buttons. */
+  .text-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 46px;          /* SIZE: matches the round header buttons */
+    padding: 0 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 18px;       /* SIZE: the words on the header buttons */
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color .15s ease, border-color .15s ease,
+                background .15s ease;
+  }
+
+  .text-btn svg {
+    width: 20px;           /* SIZE: the icon on the header buttons */
+    height: 20px;
+    display: block;
+  }
+
+  .text-btn:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .text-btn:active { transform: scale(0.97); }
+
+  .text-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
+  }
+
+  /* While the panel is open the button stays lit, so it is obvious
+     which button the panel belongs to. */
+  .text-btn.open {
+    color: var(--text);
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* ---------------------------- HISTORY ----------------------------
+     The list of saved conversations. Drops down from the header over
+     the conversation, rather than taking a column beside it - both
+     edges of the window are already occupied by the fixed rails. */
+
+  #history-panel {
+    position: absolute;
+    right: 48px;         /* lines up with the header's own padding */
+    top: calc(100% + 8px);
+    width: 580px;        /* SIZE: width of the history panel */
+    max-width: calc(100vw - 32px);
+    max-height: 78vh;    /* SIZE: how far down the panel may reach */
+    display: flex;       /* so the heading stays put while the list scrolls */
+    flex-direction: column;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+    z-index: 20;
+    overflow: hidden;
+    animation: drop 0.14s ease-out;
+  }
+
+  /* The `hidden` attribute hides an element by setting display:none in
+     the browser's own stylesheet, which any display here outranks. The
+     rule above sets display:flex, so hidden stopped hiding anything -
+     the close button set the attribute correctly and the panel sat
+     there regardless. */
+  #history-panel[hidden] { display: none; }
+
+  /* A short drop, so the panel reads as coming from the button rather
+     than appearing from nowhere. */
+  @keyframes drop {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Only the list scrolls. A heading that scrolls away takes with it
+     the close button and any sense of where the list ends. */
+  #history-list {
+    overflow-y: auto;
+    padding: 6px;
+  }
+
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;   /* reads as a heading, not a row */
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .history-head .icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 17px;
+  }
+
+  /* One row per saved conversation.
+
+     A left edge that lights up on hover, matching the accent rail on
+     Athena's replies - the same visual language for "this is a piece
+     of conversation" in both places. */
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 16px;   /* SIZE: height of a row in the history list */
+    border-radius: 12px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+  }
+
+  /* display:flex above outranks the hidden attribute, which hides
+     things via display:none in the browser's own stylesheet. Without
+     this a row waiting to be deleted stays on screen. */
+  .history-item[hidden] { display: none; }
+
+  .history-item:hover {
+    background: var(--panel);
+    border-left-color: var(--border);
+  }
+
+  /* The one currently open. Marked with the accent rather than a full
+     outline, which was heavy enough to look like a text field. */
+  .history-item.current {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+
+  .history-item .who {
+    flex: 1;
+    min-width: 0;   /* lets the title actually ellipsis inside a flex row */
+  }
+
+  .history-item .title {
+    display: block;
+    font-size: 18px;      /* SIZE: conversation titles in the list */
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .history-item.current .title { color: var(--text); }
+
+  .history-item .when {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 14px;      /* SIZE: the "3 messages - 2 hours ago" line */
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Hidden until the row is hovered: a delete button sitting in every
+     row all the time turns a list into a minefield. */
+  .history-item .remove {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity .12s ease, color .12s ease, background .12s ease;
+  }
+
+  .history-item:hover .remove { opacity: 1; }
+
+  .history-item .remove:hover {
+    color: var(--danger);
+    background: rgba(217, 74, 74, 0.14);
+  }
+
+  /* Keyboard users never hover, so the button has to appear on focus
+     or it cannot be reached at all. */
+  .history-item .remove:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--danger);
+  }
+
+  /* ----------------------------- UNDO BAR -----------------------------
+     Shown after deleting a conversation. The deletion has not happened
+     yet - it goes out when the timer empties - so this is the whole
+     mechanism, not a notification about one. */
+
+  /* Anchored to the right edge rather than centred. Centred, it sat
+     over the conversation and under the input box - the two things
+     being read while it counts down. Out here it is beside the work
+     instead of on top of it, which is also where the delete it undoes
+     was clicked. */
+  #toast {
+    position: fixed;
+    /* Clears the input box, the same way the rails do. Sitting at a
+       fixed distance from the bottom put it on top of the thing being
+       typed into, which grows as the message does. */
+    bottom: calc(var(--footer-h, 150px) + 22px);
+    right: 32px;         /* SIZE: how far it sits in from the right edge */
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 20px 26px;  /* SIZE: how chunky the undo bar is */
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6);
+    font-size: 18px;     /* SIZE: text in the undo bar */
+    color: var(--text);
+    z-index: 40;         /* above the rails and the history panel */
+    overflow: hidden;    /* keeps the timer bar inside the rounded corner */
+    max-width: calc(100vw - 32px);
+    animation: toast-in 0.16s ease-out;
+  }
+
+  /* display:flex above would otherwise beat the hidden attribute,
+     which works by setting display:none in the browser's own
+     stylesheet. */
+  #toast[hidden] { display: none; }
+
+  /* Slides in from the right, matching where it now lives. */
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  #toast-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #toast-undo {
+    font-family: var(--font-mono);
+    font-size: 17px;     /* SIZE: the Undo button */
+    color: var(--accent);
+    background: none;
+    border: 1px solid rgba(124, 140, 255, 0.4);
+    border-radius: 999px;
+    padding: 9px 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .12s ease, border-color .12s ease;
+  }
+
+  #toast-undo:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  /* The time left, draining left to right along the bottom edge. A
+     number counting down would say the same thing and ask to be read;
+     this is understood without looking straight at it. */
+  #toast-timer {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 4px;         /* SIZE: thickness of the countdown bar */
+    width: 100%;
+    background: var(--accent);
+    transform-origin: left center;
+  }
+
+  @keyframes drain {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
+
+  .history-empty {
+    padding: 18px 14px 22px;
+    color: var(--muted);
+    font-size: 16px;
+    text-align: center;
+  }
+
+  /* ================================ CHAT ================================ */
+
+  main {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Once the two rails appear, the conversation is given the whole
+     space between them. The rails float over the page rather than
+     sitting in it, so without this padding the chat would slide
+     underneath them - and with it, the chat is as wide as the window
+     genuinely allows. SIZE: the two numbers are the room kept for the
+     pipeline on the left and the minimap on the right. */
+  /* Equal on both sides, set by the WIDER of the two rails, so the
+     conversation sits in the middle of the window. Matching each side
+     to its own rail would clear them both but push the chat off-centre,
+     since the pipeline is wider than the minimap. */
+  @media (min-width: 1150px) {
+    main { padding-left: 380px; padding-right: 380px; }
+  }
+
+  @media (min-width: 1150px) and (max-width: 1500px) {
+    main { padding-left: 228px; padding-right: 228px; }
+  }
+
+  .chat-frame {
+    width: 100%;
+    max-width: var(--read);
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #messages {
+    flex: 1;
+
+    /* SIZE: page side margins. Three numbers: space above the first
+       message, left/right margins, space below the last. */
+    padding: 40px 48px 16px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 26px;   /* SIZE: vertical gap between messages */
+  }
+
+  /* --- The welcome screen, shown until you send the first message --- */
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 30px 70px;
+  }
+
+  .logo-empty {
+    /* SIZE: big welcome owl. Change both together. */
+    width: 132px;
+    height: 132px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 30px;
+    box-shadow: 0 0 0 1px var(--border), 0 0 60px rgba(124, 140, 255, 0.22);
+  }
+
+  .empty-state h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 66px;   /* SIZE: welcome heading - "Ask Athena anything" */
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin: 0 0 14px;
+    text-wrap: balance;
+  }
+
+  /* SIZE: welcome subtitle */
+  .empty-state p {
+    font-size: 25px;
+    margin: 0 auto 38px;
+    max-width: 30ch;   /* keeps the sentence from stretching too wide */
+  }
+
+  /* The row of clickable example questions. Edit their wording in the
+     HTML further down, search for: class="suggestion" */
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    max-width: 1000px;    /* SIZE: how wide the block of them may get */
+    margin: 0 auto;
+  }
+
+  .suggestion {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 12px 24px;   /* SIZE: how chunky each question button is */
+    font-size: 21px;      /* SIZE: starter questions - their text */
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease,
+                background .15s ease, transform .15s ease;
+  }
+
+  .suggestion:hover {
+    color: var(--text);
+    border-color: rgba(124, 140, 255, 0.5);
+    background: var(--accent-soft);
+    transform: translateY(-2px);
+  }
+
+  /* --- One message: a small name label with the message underneath ---
+
+     Your messages and Athena's are shaped differently on purpose.
+     Yours are short and get a compact bubble on the right. Athena's
+     are answers - often several sentences with figures in them - so
+     they get a full-width panel with a coloured rail down the side,
+     which reads as a document rather than a chat bubble. */
+
+  .row { display: flex; flex-direction: column; }
+  .row.user { align-items: flex-end; }
+
+  /* flex-start, not stretch, so a reply is only as wide as it needs to
+     be. Stretched, "Hello! How can I assist you today?" filled a panel
+     the width of the whole column and left most of it empty, which
+     made a short exchange look like a mostly blank page. Long answers
+     still use the full width - they simply grow into it. */
+  .row.athena { align-items: flex-start; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .row { animation: rise 0.24s ease-out; }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* The small "you" / "athena" name above each message. */
+  .label {
+    font-family: var(--font-mono);
+    font-size: 20px;          /* SIZE: you-athena label */
+    letter-spacing: 0.12em;
+
+    /* Change to "uppercase" for YOU / ATHENA, or "none" to leave it
+       exactly as written. */
+    text-transform: lowercase;
+
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding: 0 4px;
+  }
+
+  .athena .label { color: var(--accent); opacity: 0.85; }
+
+  .bubble {
+    padding: 20px 26px;    /* SIZE: space inside a message */
+    border-radius: var(--radius);
+    line-height: 1.62;
+    font-size: 30px;       /* SIZE: chat message text */
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Shaped like an answer, mirrored: the same panel and border, with a
+     bright rail down the RIGHT edge where Athena's sits on the left.
+     The two sides of the conversation then read as a matched pair
+     rather than two unrelated styles. */
+  .user .bubble {
+    max-width: 76%;        /* SIZE: how wide your own messages may get */
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+
+    /* SIZE: the bright edge on your messages. Slightly off pure white,
+       which glared against the dark panel next to it. */
+    border-right: 4px solid #c7ccdb;
+
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .athena .bubble {
+    /* SIZE: how far a reply may stretch before the text wraps. */
+    max-width: 92%;
+
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+
+    /* The coloured rail down the left of every answer. Set the width
+       to 0 to remove it. */
+    border-left: 4px solid var(--accent);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  /* Red-tinted panel used only for error messages. */
+  .bubble.error {
+    border-color: rgba(217, 74, 74, 0.5);
+    border-left-color: var(--danger);
+    background: rgba(217, 74, 74, 0.08);
+  }
+
+  /* A reply the user stopped. Greyed and italic rather than red -
+     nothing failed, so it should not look like something did. */
+  .bubble.stopped {
+    border-left-color: var(--muted);
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* A pasted image, shown inside the message you sent. */
+  .thumb {
+    max-width: 280px;   /* SIZE: image thumbnail inside a sent message */
+    border-radius: 12px;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  /* The grey line under each reply with the time and token counts. */
+  .meta {
+    font-family: var(--font-mono);
+    font-size: 17px;      /* SIZE: reply stats line */
+    color: var(--muted);
+    margin-top: 12px;
+    padding: 0 4px 0 8px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meta span { display: flex; align-items: center; gap: 9px; }
+
+  /* Verified sources stay out of the answer itself, but remain one
+     click away when the user wants to inspect where a current fact or
+     document detail came from. */
+  .sources {
+    max-width: 92%;
+    margin-top: 10px;
+    padding-left: 8px;
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  .sources summary {
+    width: fit-content;
+    cursor: pointer;
+    color: var(--muted);
+  }
+
+  .source-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .source-links a,
+  .source-links span {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  .source-links a:hover { color: var(--accent); }
+
+  /* "redo" on the newest reply: ask again and forget the first answer.
+
+     Sits in the stats line rather than on the bubble, because it
+     belongs with the other things you can know about a reply rather
+     than with the reply itself. Quiet until the row is hovered - a
+     button offering to discard an answer should not be the brightest
+     thing under it. */
+  .redo {
+    font-family: var(--font-mono);
+    font-size: inherit;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .14s ease, color .14s ease, border-color .14s ease;
+  }
+
+  .row.athena:hover .redo { opacity: 1; }
+
+  .redo:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Keyboard users never hover, so it has to appear on focus or it
+     cannot be reached at all. */
+  .redo:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /* On a touch screen there is no hover, so it is simply always
+     visible - dimmed, which is as quiet as it can be there. */
+  @media (hover: none) {
+    .redo { opacity: 0.55; }
+  }
+
+  /* ============================== THINKING ==============================
+     Shown while Athena is working: bouncing dots, a live status
+     ("Searching the web"), and a timer counting up. Deliberately the
+     same shape as an answer, so the reply does not jump when it
+     replaces this. */
+
+  .thinking {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 26px;    /* keep matching .bubble padding above */
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .dots { display: flex; gap: 9px; }
+
+  .dots i {
+    width: 12px;    /* SIZE: the bouncing dots. Change both together. */
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: block;
+    animation: bounce 1.3s ease-in-out infinite;
+  }
+
+  .dots i:nth-child(2) { animation-delay: 0.18s; }
+  .dots i:nth-child(3) { animation-delay: 0.36s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+    30% { transform: translateY(-8px); opacity: 1; }
+  }
+
+  .stage {
+    font-size: 26px;   /* SIZE: live status, e.g. "Searching the web" */
+    color: var(--text);
+  }
+
+  .elapsed {
+    font-family: var(--font-mono);
+    font-size: 21px;              /* SIZE: the timer counting up */
+    color: var(--muted);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================== COMPOSER ==============================
+     The bar at the bottom where you type. */
+
+  footer {
+    border-top: 1px solid var(--border);
+    background: rgba(11, 13, 18, 0.78);
+    backdrop-filter: blur(14px);
+    padding: 16px 48px 20px;
+    flex-shrink: 0;
+  }
+
+  .footer-inner {
+    /* SIZE: input box width. A percentage, not a fixed size, so the
+       box stays proportionally narrow on a small screen instead of
+       stretching to fill it. Lower = narrower. */
+    width: 75%;
+
+    max-width: 1500px;   /* stops it getting silly on a huge monitor */
+    margin: 0 auto;
+  }
+
+  #composer { display: flex; flex-direction: column; gap: 12px; }
+
+  #pending-image-container {
+    display: none;   /* JavaScript switches this on when you paste */
+    position: relative;
+    width: fit-content;
+  }
+
+  #pending-image {
+    /* SIZE: preview of a pasted image. Change both together. */
+    width: 250px;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--panel-raised);
+    display: block;
+  }
+
+  /* The little x that removes a pasted image. */
+  #remove-image {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 34px;    /* SIZE: the remove-image x button */
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  #remove-image:hover { background: var(--danger); }
+
+  #inputbar {
+    display: flex;
+    align-items: flex-end;   /* keeps the button level with the last line */
+    gap: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+
+    /* SIZE: input box height (1 of 3) - padding around the whole bar.
+       Height comes from THREE places: this, the textarea, and the send
+       button. Change all three by a similar amount, or the text sits
+       off-centre next to a button that is still tall. */
+    padding: 8px 8px 8px 20px;
+
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+
+  /* Glows faintly while the cursor is in the box. */
+  #inputbar:focus-within {
+    border-color: rgba(124, 140, 255, 0.55);
+    box-shadow: 0 0 0 4px rgba(124, 140, 255, 0.10);
+  }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 30px;         /* SIZE: the text you type */
+    font-family: var(--font-body);
+
+    /* SIZE: input box height (2 of 3) - these two decide how tall the
+       empty box looks. line-height is a multiplier of the font size. */
+    line-height: 1.2;
+    padding: 12px 0;
+
+    resize: none;
+    max-height: 240px;       /* SIZE: how far the box grows before it
+                                starts scrolling instead */
+  }
+
+  textarea:focus { outline: none; }
+  textarea::placeholder { color: var(--muted); }
+
+  /* The mode picker, inside the input bar to the left of send. Styled
+     to disappear into the bar rather than compete with the button. */
+  #mode-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 19px;         /* SIZE: the mode name (Careful/Quick/Tutor) */
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0 22px 0 6px;   /* right padding leaves room for the arrow */
+    margin-bottom: 15px;     /* lifts it level with the send button */
+
+    /* The little arrow, drawn with two gradients so no image is used. */
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 11px) 60%, calc(100% - 6px) 60%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  #mode-select:hover { color: var(--text); }
+
+  /* The items in the open dropdown. These need setting explicitly as
+     well as color-scheme above: the list is an operating-system menu,
+     and it does not inherit the colours of the control it drops from. */
+  #mode-select option {
+    background: var(--panel-raised);
+    color: var(--text);
+    font-family: var(--font-body);
+  }
+
+  #mode-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* Greyed out while a model is loading, so it cannot be changed twice
+     at once - a second switch mid-load would fight the first. */
+  #mode-select:disabled { opacity: 0.45; cursor: wait; }
+
+  /* The send button is an arrow, not the word "Send", so it is square:
+     width and height must match to stay a circle. */
+  #send {
+    /* A soft top-to-bottom fade rather than one flat colour - it
+       catches the light and stops the circle looking like a sticker. */
+    background: linear-gradient(160deg, #97a4ff 0%, var(--accent) 55%, #6675f0 100%);
+    border: none;
+    color: #0b0d12;
+
+    /* SIZE: input box height (3 of 3) - the send button. Width and
+       height must match or the circle turns into an oval. */
+    width: 58px;
+    height: 58px;
+
+    border-radius: 50%;      /* 50% = circle; lower for a rounded square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    /* Lifts the button off the bar: a soft coloured glow underneath
+       plus a faint highlight along the top edge. */
+    box-shadow: 0 4px 14px rgba(124, 140, 255, 0.38),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+    transition: filter .15s ease, opacity .15s ease,
+                transform .15s ease, box-shadow .15s ease;
+  }
+
+  #send svg {
+    width: 26px;    /* SIZE: the icon inside the send button */
+    height: 26px;
+    display: block;
+  }
+
+  /* Which of the two icons shows. The button carries .busy while a
+     reply is running, and only then is it a stop button. */
+  #send .icon-stop { display: none; }
+  #send.busy .icon-send { display: none; }
+  #send.busy .icon-stop { display: block; }
+
+  /* Quiet while it means stop.
+
+     It was a bright red gradient with a coloured glow, which read as an
+     alarm - and stopping a reply is an ordinary thing to do, not an
+     emergency. It is now a flat dark disc with a faint outline: clearly
+     a different button from the send arrow, without shouting. The red
+     only appears on hover, when you are actually reaching for it. */
+  #send.busy {
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    box-shadow: none;
+  }
+
+  #send.busy:hover {
+    background: rgba(217, 74, 74, 0.14);
+    border-color: rgba(217, 74, 74, 0.5);
+    color: #e98b8b;
+    filter: none;
+    transform: none;
+    box-shadow: none;
+  }
+
+  #send.busy:active { transform: scale(0.95); }
+
+  /* The square is smaller than the send arrow. A stop icon reads
+     clearly at this size, and the smaller mark is part of what keeps
+     the button quiet. */
+  #send.busy .icon-stop { width: 16px; height: 16px; }
+
+  /* A stop button that greys out while the thing it stops is still
+     running would be useless, so .busy overrides :disabled. */
+  #send.busy:disabled {
+    opacity: 1;
+    cursor: pointer;
+    box-shadow: none;
+  }
+
+  #send:hover {
+    filter: brightness(1.06);
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(124, 140, 255, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  /* Presses in slightly when clicked, so it feels like a button. */
+  #send:active { transform: translateY(0) scale(0.95); }
+
+  #send:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+  }
+
+  #send:focus-visible {
+    outline: 3px solid var(--text);
+    outline-offset: 3px;
+  }
+
+  /* The small grey line of tips under the input box. */
+  .hint {
+    margin-top: 12px;
+    font-size: 18px;      /* SIZE: the hint line under the input box */
+    color: var(--muted);
+    text-align: center;
+    opacity: 0.75;
+  }
+
+  .hint kbd {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+  }
+
+  /* ============================== MINIMAP ==============================
+     A shrunken map of the conversation down the right-hand side. Each
+     message is one block - no text, just the shape and position - so a
+     long answer reads as a tall block and a one-line reply as a short
+     one. Clicking a block jumps to that message.
+
+     It is positioned against the window rather than sitting in the
+     page, so the conversation underneath stays exactly centred. The
+     top and bottom clear the header and footer, whose real heights are
+     measured in JavaScript and written into the two variables below. */
+
+  /* The rail holds the pipeline at the top and the minimap below.
+     Positioned against the window rather than sitting in the page, so
+     the conversation underneath stays exactly centred. Its top and
+     bottom clear the header and footer, whose real heights are
+     measured in JavaScript into the two variables below. */
+  #rail {
+    position: fixed;
+    right: 22px;                        /* SIZE: gap from the window edge */
+    top: calc(var(--header-h, 90px) + 18px);
+    bottom: calc(var(--footer-h, 150px) + 18px);
+    width: 236px;                       /* SIZE: rail width */
+
+    display: none;         /* JavaScript shows it once there is a page */
+    flex-direction: column;
+    gap: 18px;             /* SIZE: gap between pipeline and minimap */
+    z-index: 5;
+  }
+
+  /* SIZE: narrowest window that still gets a rail. Below this it would
+     crowd the conversation, so it disappears entirely. */
+  @media (min-width: 1150px) {
+    #rail.on { display: flex; }
+  }
+
+  /* On a mid-sized window the rail is trimmed rather than dropped. */
+  @media (min-width: 1150px) and (max-width: 1500px) {
+    #rail { width: 146px; right: 12px; }
+  }
+
+  /* ---- The pipeline, down the left ---- */
+
+  #flow-rail {
+    position: fixed;
+    left: 26px;                         /* SIZE: gap from the left edge */
+    top: calc(var(--header-h, 90px) + 18px);
+    bottom: calc(var(--footer-h, 150px) + 18px);
+    width: 350px;                       /* SIZE: pipeline width */
+    display: none;                      /* JavaScript switches this on */
+    flex-direction: column;
+
+    /* Sits in the middle of its column rather than clinging to the
+       top, so the diagram is level with the conversation instead of
+       leaving a tall gap underneath it. */
+    justify-content: center;
+
+    z-index: 5;
+  }
+
+  @media (min-width: 1150px) {
+    #flow-rail.on { display: flex; }
+  }
+
+  @media (min-width: 1150px) and (max-width: 1500px) {
+    #flow-rail { width: 210px; left: 12px; }
+  }
+
+  /* max-height keeps the whole diagram on screen when it grows a line
+     for each capability: rather than running off the bottom, it scales
+     down to fit the space it has. */
+  #flow-svg {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    overflow: visible;
+  }
+
+  /* Capability names listed inside the run node. */
+  .run-tool {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11.5px;        /* SIZE: capability names inside "execute" */
+    text-anchor: middle;
+  }
+
+  /* The capability running at this moment. */
+  .run-tool.live {
+    fill: var(--accent);
+    animation: pulse 1.3s ease-in-out infinite;
+  }
+
+  /* --- pipes --- */
+
+  .pipe {
+    stroke: var(--border);
+    stroke-width: 2;
+    transition: stroke .2s ease;
+  }
+
+  /* The loop from run back to plan, drawn thinner since it is the
+     exception rather than the main line. */
+  .pipe.loop { stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+  /* A leg already travelled this turn. */
+  .pipe.done { stroke: rgba(124, 140, 255, 0.45); }
+
+  /* The leg being travelled right now: a dashed stroke pulled along
+     the path, which is what makes the flow look like it is moving.
+     SIZE: the two numbers are dash length and gap. */
+  .pipe.flowing {
+    stroke: var(--accent);
+    stroke-dasharray: 7 9;
+    animation: pipeflow 0.7s linear infinite;   /* 0.7s = travel speed */
+  }
+
+  @keyframes pipeflow {
+    /* 16 = one dash plus one gap, so the loop is seamless. */
+    to { stroke-dashoffset: -16; }
+  }
+
+  /* --- nodes --- */
+
+  .fnode rect {
+    fill: var(--panel);
+    stroke: var(--border);
+    stroke-width: 1;
+    transition: fill .2s ease, stroke .2s ease;
+  }
+
+  .fnode text {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 14px;            /* SIZE: node labels in the pipeline */
+    text-anchor: middle;
+    letter-spacing: 0.04em;
+    transition: fill .2s ease;
+  }
+
+  /* The start and end of the whole run, drawn as pills. */
+  .fnode.endpoint rect { fill: transparent; stroke-dasharray: 3 3; }
+
+  /* Passed through already. */
+  .fnode.done rect { stroke: rgba(124, 140, 255, 0.5); fill: var(--panel-raised); }
+  .fnode.done text { fill: var(--text); }
+
+  /* Happening right now. */
+  .fnode.active rect {
+    stroke: var(--accent);
+    stroke-width: 2;
+    fill: var(--accent-soft);
+    filter: drop-shadow(0 0 6px rgba(124, 140, 255, 0.55));
+  }
+  .fnode.active text { fill: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pipe.flowing { animation: none; }
+  }
+
+  /* ---- The minimap ---- */
+
+  #minimap {
+    position: relative;    /* the viewport marker is placed inside it */
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 4px;
+  }
+
+  #minimap-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    /* Squeezes to fit rather than overflowing once a conversation gets
+       long - the same thing a code editor's minimap does. */
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* One message. Only the shape carries meaning: which side it sits
+     on, and how tall it is. */
+  .mm-block {
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 4px;
+    flex-shrink: 1;
+    min-height: 8px;      /* SIZE: smallest a block may shrink to, so it
+                             stays big enough to click */
+    transition: opacity .15s ease, transform .15s ease;
+    opacity: 0.55;
+  }
+
+  .mm-block:hover { opacity: 1; transform: scaleX(1.06); }
+
+  .mm-block:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    opacity: 1;
+  }
+
+  /* Your messages: narrow, pushed right - mirroring the real layout. */
+  /* Matches the real message: panel body, bright edge on the right. */
+  .mm-block.user {
+    width: 42%;           /* SIZE: width of your blocks */
+    align-self: flex-end;
+    background: var(--panel-raised);
+    border-right: 3px solid #c7ccdb;
+  }
+
+  /* Athena's: wider, on the left, with the same accent rail the real
+     answers have. */
+  .mm-block.athena {
+    width: 82%;           /* SIZE: width of Athena's blocks */
+    align-self: flex-start;
+    background: var(--panel-raised);
+    border-left: 3px solid var(--accent);
+  }
+
+  .mm-block.error { border-left-color: var(--danger); background: #3a1e22; }
+
+  /* The pale window showing which part of the conversation is on
+     screen. Ignores clicks so the blocks underneath stay reachable. */
+  #minimap-viewport {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: rgba(124, 140, 255, 0.10);
+    border: 1px solid rgba(124, 140, 255, 0.30);
+    border-radius: 6px;
+    pointer-events: none;
+    transition: top .1s linear, height .1s linear;
+  }
+
+  /* ============================= SCROLLBAR ============================= */
+
+  main::-webkit-scrollbar { width: 14px; }   /* SIZE: scrollbar thickness */
+  main::-webkit-scrollbar-track { background: transparent; }
+  main::-webkit-scrollbar-thumb {
+    background: rgba(124, 140, 255, 0.25);
+    border-radius: 999px;
+  }
+  main::-webkit-scrollbar-thumb:hover { background: rgba(124, 140, 255, 0.45); }
+
+  /* ============================ PHONE LAYOUT ============================
+     Applies ONLY when the window is 640px wide or narrower. The desktop
+     sizes above simply do not fit, so they are overridden here.
+
+     This block is also a worked example of resizing the whole
+     interface: to shrink the desktop UI, copy this list and adjust the
+     numbers above to match. */
+
+  @media (max-width: 640px) {
+    body { font-size: 17px; }
+
+    .app-header { padding: 8px 16px; gap: 10px; }
+    .logo { width: 40px; height: 40px; }
+    .app-header h1 { font-size: 28px; }
+    .chip { font-size: 13px; padding: 4px 10px; }
+    .chip.tokens { display: none; }   /* no room for it on a phone */
+    .icon-btn { width: 30px; height: 30px; font-size: 15px; }
+
+    /* The words come off on a phone - three pill buttons and the title
+       do not fit across 375px. The icons still say which is which, and
+       the title attribute survives for a long press. */
+    .text-btn { height: 30px; padding: 0 9px; gap: 0; }
+    .text-btn span { display: none; }
+    .text-btn svg { width: 16px; height: 16px; }
+
+    #history-panel {
+      right: 8px;
+      left: 8px;
+      width: auto;
+    }
+
+    /* Full width on a phone: there is no "right hand side" worth
+       anchoring to, and the buttons need the room. */
+    #toast {
+      right: 12px;
+      left: 12px;
+      gap: 14px;
+      padding: 14px 16px;
+      font-size: 15px;
+    }
+
+    #toast-undo { font-size: 15px; padding: 7px 16px; }
+
+    #messages { padding: 18px 16px 8px; gap: 20px; }
+    .logo-empty { width: 74px; height: 74px; margin-bottom: 18px; }
+    .empty-state h2 { font-size: 32px; }
+    .empty-state p { font-size: 15px; margin-bottom: 22px; }
+    .suggestion { font-size: 14px; padding: 8px 15px; }
+
+    .label { font-size: 13px; margin-bottom: 6px; }
+    .bubble { font-size: 17px; padding: 12px 15px; }
+    .user .bubble { max-width: 90%; }
+    .meta { font-size: 12px; gap: 12px; }
+
+    .thinking { padding: 12px 15px; gap: 10px; }
+    .stage { font-size: 16px; }
+    .elapsed { font-size: 13px; }
+
+    footer { padding: 10px 16px 12px; }
+    .footer-inner { width: 100%; }   /* full width - no room to narrow it */
+    textarea { font-size: 17px; padding: 8px 0; }
+    #inputbar { padding: 6px 6px 6px 12px; gap: 8px; }
+    #mode-select { font-size: 13px; margin-bottom: 9px; padding-right: 18px; }
+    #send { width: 38px; height: 38px; font-size: 16px; }
+    .hint { font-size: 13px; }
+    .hint kbd { font-size: 12px; }
+    #pending-image { width: 150px; height: 150px; }
+  }
+</style>
+<!-- The processing rail is the only part of the restored interface that is
+     intentionally redesigned. Keeping it in its own file prevents pipeline
+     experiments from changing the chat, header, composer or minimap again. -->
+<link rel="stylesheet" href="/static/pipeline.css?v=1">
+</head>
+<body>
+
+<header>
+  <div class="app-header">
+    <img src="/static/owl1.png" class="logo" alt="">
+    <h1>Athena</h1>
+
+    <div class="spacer"></div>
+
+    <div class="chip tokens" id="session-chip" title="Tokens used this session">
+      <span id="session-tokens">0</span> tokens
+    </div>
+
+    <!-- Labelled, not a bare "+". Starting a new conversation and
+         opening the old ones are the two things people look for up
+         here, and a lone plus glyph next to a lone hamburger glyph
+         makes both a guess. The icons are drawn rather than typed so
+         they are the same shape in every font. -->
+    <button class="text-btn" id="new-chat" type="button"
+            title="Start a new conversation">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>New chat</span>
+    </button>
+
+    <button class="text-btn" id="history-toggle" type="button"
+            title="Previous conversations">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 8v4l3 2" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor"
+                stroke-width="2"/>
+      </svg>
+      <span>History</span>
+    </button>
+    <button class="icon-btn" id="sound-toggle" type="button"
+            aria-label="Toggle the completion sound"
+            title="Toggle the completion sound">&#9834;</button>
+  </div>
+
+  <!-- Slides down over the conversation rather than pushing it aside.
+       The two rails are already fixed to the edges, so a panel that
+       took horizontal space would have to move both of them. -->
+  <div id="history-panel" role="dialog" aria-label="Previous conversations" hidden>
+    <div class="history-head">
+      <span>Previous conversations</span>
+      <button class="icon-btn" id="history-close" type="button"
+              aria-label="Close conversation history" title="Close">&times;</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</header>
+
+<!-- The undo bar, shown after deleting a conversation.
+
+     Outside the header on purpose. The header has a backdrop-filter,
+     and a filter makes an element the containing block for anything
+     positioned fixed inside it - the bar would have anchored itself to
+     the header rather than the window.
+
+     Outside the history panel too, so it survives the panel closing:
+     the timer keeps running either way, and hiding the way back would
+     make it a trap. -->
+<div id="toast" role="status" aria-live="polite" hidden>
+  <span id="toast-text"></span>
+  <button id="toast-undo" type="button">Undo</button>
+  <div id="toast-timer"></div>
+</div>
+
+<main aria-label="Conversation">
+  <div class="chat-frame">
+    <div id="messages" aria-live="polite">
+      <div class="empty-state" id="empty-state">
+        <img src="/static/owl1.png" class="logo-empty" alt="">
+        <h2>Ask Athena anything</h2>
+        <p>Runs entirely on this machine.<br>Isn't It Amazing!</p>
+        <div class="suggestions">
+          <button class="suggestion" type="button">What's the weather in Tokyo?</button>
+          <button class="suggestion" type="button">Summarise a PDF on my computer</button>
+          <button class="suggestion" type="button">How much is 100 dollars in euros?</button>
+          <button class="suggestion" type="button">Explain how HTTPS works</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- The minimap: one small block per message, no text. Clicking a
+     block jumps to that message. Hidden until there is a conversation
+     to map, and on screens too narrow to spare the width. -->
+<!-- The processing rail has two views. At rest it is a small, quiet trace;
+     while Athena works it expands into the actual route taken. Clicking it
+     after a reply keeps that route open for inspection. -->
+<aside id="flow-rail" role="button" tabindex="0"
+       aria-label="Processing pipeline. Click to expand the last route.">
+  <svg id="flow-svg" viewBox="0 0 280 205" preserveAspectRatio="xMidYMid meet"
+       aria-hidden="true">
+
+    <!-- The idle view deliberately omits branches and tool details. -->
+    <g class="idle-layer">
+      <g fill="none" stroke-linecap="round">
+        <path class="idle-pipe" d="M140,42 L140,82"/>
+        <path class="idle-pipe" d="M140,114 L140,154"/>
+      </g>
+      <g class="idle-node endpoint">
+        <rect x="85" y="10" width="110" height="32" rx="16"/>
+        <text x="140" y="31">message</text>
+      </g>
+      <g class="idle-node">
+        <rect x="78" y="82" width="124" height="32" rx="8"/>
+        <text x="140" y="103">understand</text>
+      </g>
+      <g class="idle-node endpoint">
+        <rect x="85" y="154" width="110" height="32" rx="16"/>
+        <text x="140" y="175">answer</text>
+      </g>
+    </g>
+
+    <!-- The detailed trace keeps the original IDs because JavaScript lights
+         these exact nodes from structured stage keys sent by the server. -->
+    <g class="trace-layer">
+      <!-- Pipes first, so the node boxes sit on top of their ends. -->
+      <g class="pipes" fill="none" stroke-linecap="round">
+        <path id="p-msg-route"      class="pipe" d="M140,42 L140,78"/>
+        <path id="p-route-chat"     class="pipe" d="M140,110 C140,134 60,126 60,152"/>
+        <path id="p-route-plan"     class="pipe" d="M140,110 C140,134 210,126 210,152"/>
+        <path id="p-plan-run"       class="pipe" d="M210,184 L210,226"/>
+        <path id="p-run-plan"       class="pipe loop" d="M145,242 C118,242 118,168 145,168"/>
+        <path id="p-chat-compose"   class="pipe" d="M60,184 C60,290 140,285 140,316"/>
+        <!-- Ordinary chat is not evidence-verified. This honest bypass joins
+             Compose directly to Answer instead of lighting a disconnected
+             segment beneath an unused Verify node. -->
+        <path id="p-compose-answer" class="pipe direct" d="M85,332 C38,332 38,480 85,480"/>
+        <path id="p-run-compose"    class="pipe" d="M210,258 C210,295 140,288 140,316"/>
+        <!-- Shifted down together with the nodes they join, whenever the
+             tool node grows to list a capability. -->
+        <g id="lower-pipes">
+          <path id="p-compose-verify" class="pipe" d="M140,348 L140,390"/>
+          <path id="p-verify-answer"  class="pipe" d="M140,422 L140,464"/>
+        </g>
+      </g>
+
+      <g class="nodes">
+        <g id="n-message" class="fnode endpoint">
+          <rect x="85" y="10" width="110" height="32" rx="16"/>
+          <text x="140" y="31">message</text>
+        </g>
+
+        <g id="n-route" class="fnode">
+          <rect x="78" y="78" width="124" height="32" rx="8"/>
+          <text x="140" y="99">understand</text>
+        </g>
+
+        <g id="n-chat" class="fnode">
+          <rect x="6" y="152" width="108" height="32" rx="8"/>
+          <text x="60" y="173">direct</text>
+        </g>
+
+        <g id="n-plan" class="fnode">
+          <rect x="145" y="152" width="130" height="32" rx="8"/>
+          <text x="210" y="173">plan</text>
+        </g>
+
+        <!-- The box grows downwards as capabilities run. Friendly labels are
+             shown here; hovering them reveals their technical registry name. -->
+        <g id="n-run" class="fnode">
+          <rect id="run-rect" x="145" y="226" width="130" height="32" rx="8"/>
+          <text x="210" y="247">use tools</text>
+          <g id="run-tools"></g>
+        </g>
+
+        <g id="lower">
+          <g id="n-compose" class="fnode">
+            <rect x="85" y="316" width="110" height="32" rx="8"/>
+            <text x="140" y="337">compose</text>
+          </g>
+
+          <g id="n-verify" class="fnode">
+            <rect x="85" y="390" width="110" height="32" rx="8"/>
+            <text x="140" y="411">verify</text>
+          </g>
+
+          <g id="n-answer" class="fnode endpoint">
+            <rect x="85" y="464" width="110" height="32" rx="16"/>
+            <text x="140" y="485">answer</text>
+          </g>
+        </g>
+      </g>
+    </g>
+  </svg>
+</aside>
+
+<aside id="rail" aria-hidden="true">
+
+  <div id="minimap" aria-hidden="true">
+    <div id="minimap-blocks"></div>
+    <div id="minimap-viewport"></div>
+  </div>
+</aside>
+
+<footer>
+  <div class="footer-inner">
+    <div id="composer">
+      <div id="pending-image-container">
+        <img id="pending-image" alt="">
+        <button id="remove-image" type="button" title="Remove image">&times;</button>
+      </div>
+
+      <div id="inputbar">
+        <textarea id="input" rows="1" aria-label="Message Athena"
+                  placeholder="Talk to Athena..."></textarea>
+        <select id="mode-select" aria-label="Response mode"
+                title="How Athena answers"></select>
+        <!-- One button, two jobs: it sends, and while a reply is
+             running it stops it. The same control rather than a second
+             one beside it, because the stop is only ever wanted in
+             place of the send - and the bar has no room for a button
+             that spends most of its life greyed out.
+
+             Both icons are drawn as SVG rather than typed as
+             characters, because a text arrow is a different shape in
+             every font and sits slightly off-centre. -->
+        <button id="send" type="button" title="Send" aria-label="Send">
+          <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 20V5M12 5l-6.5 6.5M12 5l6.5 6.5"
+                  fill="none" stroke="currentColor" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="7" y="7" width="10" height="10" rx="2"
+                  fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sets expectations rather than teaching shortcuts. Athena runs
+         a small model on one laptop graphics card, so it is slower and
+         less capable than a hosted assistant - better said plainly
+         here than discovered halfway through a hard question. -->
+    <div class="hint">
+      Athena runs entirely on this computer. A small local model is slower
+      and less capable than a large hosted one, and it can still be wrong &mdash;
+      check anything that matters.
+    </div>
+  </div>
+</footer>
+
+<script src="/static/athena.js?v=2"></script>
+
+</body>
+</html>

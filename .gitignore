@@ -1,0 +1,43 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets and local tool settings
+.env*
+!.env.example
+.claude/
+.codex/
+.vscode/
+.idea/
+
+# Scripts Athena generates, and the files they produce
+workspace/
+
+# Saved conversations. Personal by definition - these hold whatever was
+# discussed, including file paths and document contents.
+conversations/
+
+# Test and coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local logs and reports
+*.log
+deep_test_output*.txt
+quality_report*.txt
+
+# Scratch files created while developing Athena. These are not project source.
+2025AIBXXXX.txt
+conversion_result.txt
+infix_to_postfix.cpp
+infix_to_prefix.cpp
+reverse_linked_list_in_sections.cpp
+reverse_linked_list_in_sections.py
