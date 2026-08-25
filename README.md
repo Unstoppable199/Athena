@@ -4,7 +4,7 @@
   <p><strong>A local, evidence-grounded assistant for private files, documents and code.</strong></p>
 </div>
 
-Athena is a Windows-first local AI assistant built with FastAPI, Ollama and a
+Athena is a local AI assistant built with FastAPI, Ollama and a
 custom browser interface. It can discuss ordinary questions, find and read
 documents on the computer, extract text from document images, run controlled
 public research, and show the processing route used for each answer.
