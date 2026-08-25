@@ -11,10 +11,6 @@ public research, and show the processing route used for each answer.
 
 Current release: **0.1.0-beta**. See the [changelog](CHANGELOG.md).
 
-This repository is an active learning project, not a finished secure product.
-Athena can be useful today, but a small local model can still misunderstand a
-request or produce a wrong answer. Important outputs should be verified.
-
 ## Why Athena?
 
 Most AI assistants are designed around cloud chat. Athena is for work that
